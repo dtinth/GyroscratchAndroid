@@ -47,12 +47,15 @@ class MainActivity : AppCompatActivity() {
         rootView = textView!!.rootView
 
         button.setOnClickListener {
-            if (inputPort == null) {
-                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 0)
-                } else {
-                    scan()
-                }
+            if (inputPort != null) {
+                return@setOnClickListener
+            }
+
+            val permission = ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)
+
+            when (permission) {
+                PackageManager.PERMISSION_GRANTED -> scan()
+                else -> ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 0)
             }
         }
 
