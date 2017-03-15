@@ -36,6 +36,10 @@ import org.jetbrains.anko.sensorManager
 class MainActivity : AppCompatActivity() {
 
     private enum class RotationMode(val v: Int, @ColorInt val color: Int, val note: Byte = 0) {
+    private enum class MidiNote(val noteNumber: Byte) {
+        B2(47),
+        C3(48)
+    }
         IDLE(0, Color.BLACK),
         CW(1, Color.BLUE, 48),
         CCW(-1, Color.RED, 47)
