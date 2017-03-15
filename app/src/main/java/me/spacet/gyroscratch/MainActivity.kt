@@ -9,7 +9,10 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.hardware.*
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.media.midi.MidiDevice
 import android.media.midi.MidiInputPort
 import android.media.midi.MidiManager
@@ -25,7 +28,6 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import org.jetbrains.anko.find
-import org.jetbrains.anko.findOptional
 
 class MainActivity : AppCompatActivity() {
     private var textView: TextView? = null
