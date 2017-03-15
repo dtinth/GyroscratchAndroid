@@ -83,6 +83,14 @@ class MainActivity : AppCompatActivity() {
                         rotationMode = 0
                     }
                 }
+
+                reconcile()
+
+                if (lastTimestamp > 0) {
+                    rotationHP *= Math.exp((event.timestamp - lastTimestamp) * -1e-9)
+                }
+
+                lastTimestamp = event.timestamp
             }
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
             }
