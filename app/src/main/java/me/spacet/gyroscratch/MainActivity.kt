@@ -28,6 +28,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import org.jetbrains.anko.find
+import org.jetbrains.anko.sensorManager
 
 class MainActivity : AppCompatActivity() {
     private var textView: TextView? = null
@@ -59,7 +60,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val sensorManager = applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         var rotationHP = 1.0
         var lastTimestamp: Long = 0
