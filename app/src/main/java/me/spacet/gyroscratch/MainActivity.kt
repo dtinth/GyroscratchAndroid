@@ -136,12 +136,13 @@ class MainActivity : AppCompatActivity() {
 
                     if (it.name == "gyroscratch") {
                         textView!!.text = "Connecting to ${it.address}"
-                        midiManager.openBluetoothDevice(it, fun(device) = take(device), Handler(Looper.getMainLooper()))
+                        midiManager.openBluetoothDevice(it, this@MainActivity::take, Handler(Looper.getMainLooper()))
                     }
                 }
             }
         })
     }
+
     fun take(device: MidiDevice) {
         textView!!.text = "Connected to ${device.info}"
         midiDevice = device
