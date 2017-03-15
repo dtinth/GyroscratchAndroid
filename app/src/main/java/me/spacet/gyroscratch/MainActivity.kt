@@ -35,14 +35,15 @@ import org.jetbrains.anko.sensorManager
 
 class MainActivity : AppCompatActivity() {
 
-    private enum class RotationMode(val v: Int, @ColorInt val color: Int, val note: Byte = 0) {
     private enum class MidiNote(val noteNumber: Byte) {
         B2(47),
         C3(48)
     }
+
+    private enum class RotationMode(val v: Int, @ColorInt val color: Int, val note: MidiNote? = null) {
         IDLE(0, Color.BLACK),
-        CW(1, Color.BLUE, 48),
-        CCW(-1, Color.RED, 47)
+        CW(1, Color.BLUE, MidiNote.C3),
+        CCW(-1, Color.RED, MidiNote.B2);
     }
 
     private lateinit var textView: TextView
@@ -63,6 +64,8 @@ class MainActivity : AppCompatActivity() {
 
     private var lastTimestamp: Long? = null
     private var rotationHP = 1.0
+
+    private var activeNote: MidiNote? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -165,8 +168,6 @@ class MainActivity : AppCompatActivity() {
         inputPort = device.openInputPort(0)
     }
 
-    private var activeNote: Byte = 0
-
     private fun reconcile() {
         val note = rotationMode.note
 
@@ -179,12 +180,12 @@ class MainActivity : AppCompatActivity() {
         Log.d("rotationMode", "$rotationMode")
 
         inputPort?.apply {
-            if (activeNote > 0) {
-                sendNoteOff(activeNote)
+            activeNote?.noteNumber?.let {
+                sendNoteOff(it)
             }
 
-            if (note > 0) {
-                sendNoteOn(note)
+            note?.noteNumber?.let {
+                sendNoteOn(it)
             }
         }
 
