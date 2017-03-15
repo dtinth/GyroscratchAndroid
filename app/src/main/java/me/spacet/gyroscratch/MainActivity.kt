@@ -24,6 +24,8 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
+import org.jetbrains.anko.find
+import org.jetbrains.anko.findOptional
 
 class MainActivity : AppCompatActivity() {
     private var textView: TextView? = null
@@ -36,8 +38,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val button = findViewById(R.id.bluetoothConnectButton) as Button
-        textView = findViewById(R.id.textView) as TextView
+
+        val button = find<Button>(R.id.bluetoothConnectButton)
+
+        textView = find<TextView>(R.id.textView)
         rootView = textView!!.rootView
         val thisActivity = this
         button.setOnClickListener {
