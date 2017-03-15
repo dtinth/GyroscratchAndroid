@@ -53,16 +53,6 @@ class MainActivity : AppCompatActivity() {
     private var inputPort: MidiInputPort? = null
 
     private var rotationMode: RotationMode = RotationMode.IDLE
-        set(value) {
-            if (field == value) return
-
-            field = value
-
-            rotationHP = when (value) {
-                RotationMode.CCW, RotationMode.CW -> 1.0
-                else -> 0.0
-            }
-        }
 
     private var lastTimestamp: Long? = null
     private var rotationHP = 1.0
@@ -110,11 +100,20 @@ class MainActivity : AppCompatActivity() {
 
         val rotationSpeed = event.values[2] * 180 / Math.PI
 
-        rotationMode = when {
-            (rotationSpeed > 10) -> RotationMode.CCW
-            (rotationSpeed < -10) -> RotationMode.CW
-            (Math.abs(rotationSpeed) < 3) && (rotationHP < 0.9) -> RotationMode.IDLE
-            else -> rotationMode
+        when {
+            (rotationSpeed > 10) -> {
+                rotationMode = RotationMode.CCW
+                rotationHP = 1.0
+            }
+
+            (rotationSpeed < -10) -> {
+                rotationMode = RotationMode.CW
+                rotationHP = 1.0
+            }
+
+            (Math.abs(rotationSpeed) < 3) && (rotationHP < 0.9) -> {
+                rotationMode = RotationMode.IDLE
+            }
         }
 
         reconcile()
