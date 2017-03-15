@@ -45,6 +45,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rootView: View
     private var inputPort: MidiInputPort? = null
     private var rotationMode: RotationMode = RotationMode.IDLE
+        set(value) {
+            if (field == value) return
+
+            field = value
+
+            rotationHP = when (value) {
+                RotationMode.CCW, RotationMode.CW -> 1.0
+                else -> 0.0
+            }
+        }
+
     private var lastTimestamp: Long? = null
     private var rotationHP = 1.0
 
@@ -88,20 +99,12 @@ class MainActivity : AppCompatActivity() {
         if (event == null) return
 
         val rotationSpeed = event.values[2] * 180 / Math.PI
-        when {
-            rotationSpeed > 10 -> {
-                rotationMode = RotationMode.CCW
-                rotationHP = 1.0
-            }
 
-            rotationSpeed < -10 -> {
-                rotationMode = RotationMode.CW
-                rotationHP = 1.0
-            }
-
-            Math.abs(rotationSpeed) < 3 && rotationHP < 0.9 -> {
-                rotationMode = RotationMode.IDLE
-            }
+        rotationMode = when {
+            (rotationSpeed > 10) -> RotationMode.CCW
+            (rotationSpeed < -10) -> RotationMode.CW
+            (Math.abs(rotationSpeed) < 3) && (rotationHP < 0.9) -> RotationMode.IDLE
+            else -> rotationMode
         }
 
         reconcile()
@@ -156,28 +159,32 @@ class MainActivity : AppCompatActivity() {
         midiDevice = device
         inputPort = device.openInputPort(0)
     }
+
     private var activeNote: Byte = 0
 
     private fun reconcile() {
+        val note = rotationMode.note
+
+        if (note == activeNote) {
+            return
+        }
 
         rootView.setBackgroundColor(rotationMode.color)
 
-        inputPort?.let { port ->
-            val note = rotationMode.note
 
-            if (note == activeNote) {
-                return@let
+        inputPort?.apply {
+            if (activeNote > 0) {
+                sendNoteOff(activeNote)
             }
 
-            if (activeNote > 0) {
-                port.send(byteArrayOf(0x80.toByte(), activeNote, 127), 0, 3)
-            }
-
-            activeNote = note
-            if (activeNote > 0) {
-                port.send(byteArrayOf(0x90.toByte(), activeNote, 127), 0, 3)
+            if (note > 0) {
+                sendNoteOn(note)
             }
         }
+
+        activeNote = note
+    }
+
     private fun createNoteEvent(noteOn: Boolean, note: Byte, velocity: Byte) = byteArrayOf((if (noteOn) 0x90 else 0x80).toByte(), note, velocity)
 
     private fun MidiInputPort.sendNoteEvent(noteOn: Boolean, note: Byte, velocity: Byte = 127) {
