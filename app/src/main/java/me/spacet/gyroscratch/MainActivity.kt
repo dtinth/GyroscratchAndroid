@@ -65,22 +65,23 @@ class MainActivity : AppCompatActivity() {
         var lastTimestamp: Long = 0
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent?) {
-                if (event != null) {
-                    val rotationSpeed = event.values[2] * 180 / Math.PI
-                    if (rotationSpeed > 10) {
+                if (event == null) return
+
+                val rotationSpeed = event.values[2] * 180 / Math.PI
+                when {
+                    rotationSpeed > 10 -> {
                         rotationMode = -1
                         rotationHP = 1.0
-                    } else if (rotationSpeed < -10) {
+                    }
+
+                    rotationSpeed < -10 -> {
                         rotationMode = 1
                         rotationHP = 1.0
-                    } else if (Math.abs(rotationSpeed) < 3 && rotationHP < 0.9) {
+                    }
+
+                    Math.abs(rotationSpeed) < 3 && rotationHP < 0.9 -> {
                         rotationMode = 0
                     }
-                    reconcile()
-                    if (lastTimestamp > 0) {
-                        rotationHP *= Math.exp((event.timestamp - lastTimestamp) * -1e-9)
-                    }
-                    lastTimestamp = event.timestamp
                 }
             }
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
