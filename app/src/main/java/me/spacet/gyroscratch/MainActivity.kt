@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private var inputPort: MidiInputPort? = null
     private var rootView: View? = null
     private var rotationMode: Int = 0
+    private var lastTimestamp: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +63,7 @@ class MainActivity : AppCompatActivity() {
 
         val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         var rotationHP = 1.0
-        var lastTimestamp: Long = 0
+
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent?) {
                 if (event == null) return
@@ -86,8 +87,8 @@ class MainActivity : AppCompatActivity() {
 
                 reconcile()
 
-                if (lastTimestamp > 0) {
-                    rotationHP *= Math.exp((event.timestamp - lastTimestamp) * -1e-9)
+                lastTimestamp?.let {
+                    rotationHP *= Math.exp((event.timestamp - it) * -1e-9)
                 }
 
                 lastTimestamp = event.timestamp
