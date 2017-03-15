@@ -33,17 +33,16 @@ import org.jetbrains.anko.sensorManager
 
 class MainActivity : AppCompatActivity() {
 
-    private enum class RotationMode(val v: Int, @ColorInt val color: Int) {
+    private enum class RotationMode(val v: Int, @ColorInt val color: Int, val note: Byte = 0) {
         IDLE(0, Color.BLACK),
-        CW(1, Color.BLUE),
-        CCW(-1, Color.RED)
+        CW(1, Color.BLUE, 48),
+        CCW(-1, Color.RED, 47)
     }
 
     private var textView: TextView? = null
     private var midiDevice: MidiDevice? = null
     private var inputPort: MidiInputPort? = null
     private var rootView: View? = null
-    private var rotationMode: Int = 0
     private var rotationMode: RotationMode = RotationMode.IDLE
     private var lastTimestamp: Long? = null
     private var rotationHP = 1.0
@@ -164,11 +163,7 @@ class MainActivity : AppCompatActivity() {
         rootView!!.setBackgroundColor(rotationMode.color)
 
         inputPort?.let { port ->
-            val note: Byte = when (rotationMode) {
-                RotationMode.CW -> 48
-                RotationMode.CCW -> 47
-                else -> 0
-            }
+            val note = rotationMode.note
 
             if (note == activeNote) {
                 return@let
