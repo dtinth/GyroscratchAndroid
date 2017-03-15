@@ -178,5 +178,15 @@ class MainActivity : AppCompatActivity() {
                 port.send(byteArrayOf(0x90.toByte(), activeNote, 127), 0, 3)
             }
         }
+    private fun createNoteEvent(noteOn: Boolean, note: Byte, velocity: Byte) = byteArrayOf((if (noteOn) 0x90 else 0x80).toByte(), note, velocity)
+
+    private fun MidiInputPort.sendNoteEvent(noteOn: Boolean, note: Byte, velocity: Byte = 127) {
+        createNoteEvent(noteOn, note, velocity).let {
+            send(it, 0, it.size)
+        }
     }
+
+    private fun MidiInputPort.sendNoteOff(note: Byte) = sendNoteEvent(noteOn = false, note = note)
+
+    private fun MidiInputPort.sendNoteOn(note: Byte) = sendNoteEvent(noteOn = true, note = note)
 }
