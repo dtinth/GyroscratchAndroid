@@ -29,6 +29,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import org.jetbrains.anko.find
+import org.jetbrains.anko.onClick
 import org.jetbrains.anko.sensorManager
 
 class MainActivity : AppCompatActivity() {
@@ -41,8 +42,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var textView: TextView
     private var midiDevice: MidiDevice? = null
+    private lateinit var rootView: View
     private var inputPort: MidiInputPort? = null
-    private var rootView: View? = null
     private var rotationMode: RotationMode = RotationMode.IDLE
     private var lastTimestamp: Long? = null
     private var rotationHP = 1.0
@@ -52,14 +53,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        val button = find<Button>(R.id.bluetoothConnectButton)
-
+        rootView = find<View>(android.R.id.content).rootView
         textView = find<TextView>(R.id.textView)
-        rootView = textView!!.rootView
 
-        button.setOnClickListener {
+        find<Button>(R.id.bluetoothConnectButton).onClick {
             if (inputPort != null) {
-                return@setOnClickListener
+                return@onClick
             }
 
             val permission = ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -161,7 +160,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun reconcile() {
 
-        rootView!!.setBackgroundColor(rotationMode.color)
+        rootView.setBackgroundColor(rotationMode.color)
 
         inputPort?.let { port ->
             val note = rotationMode.note
