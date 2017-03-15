@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
         CCW(-1, Color.RED, 47)
     }
 
-    private var textView: TextView? = null
+    private lateinit var textView: TextView
     private var midiDevice: MidiDevice? = null
     private var inputPort: MidiInputPort? = null
     private var rootView: View? = null
@@ -121,7 +121,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun scan() {
-        textView!!.text = "Gonna scan now!"
+        textView.text = "Gonna scan now!"
+
         val midiManager = applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
         val scanner = BluetoothAdapter.getDefaultAdapter().bluetoothLeScanner
 
@@ -140,10 +141,10 @@ class MainActivity : AppCompatActivity() {
                 if (inputPort != null) return
 
                 result?.device?.let {
-                    textView!!.text = "Found ${it.name}"
+                    textView.text = "Found ${it.name}"
 
                     if (it.name == "gyroscratch") {
-                        textView!!.text = "Connecting to ${it.address}"
+                        textView.text = "Connecting to ${it.address}"
                         midiManager.openBluetoothDevice(it, this@MainActivity::take, Handler(Looper.getMainLooper()))
                     }
                 }
@@ -152,7 +153,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun take(device: MidiDevice) {
-        textView!!.text = "Connected to ${device.info}"
+        textView.text = "Connected to ${device.info}"
         midiDevice = device
         inputPort = device.openInputPort(0)
     }
