@@ -116,14 +116,18 @@ class MainActivity : AppCompatActivity() {
         textView!!.text = "Gonna scan now!"
         val midiManager = applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
         val scanner = BluetoothAdapter.getDefaultAdapter().bluetoothLeScanner
-        val list = ArrayList<ScanFilter>()
-        list.add(ScanFilter.Builder()
+
+        val filters = listOf(ScanFilter.Builder()
                 .setServiceUuid(ParcelUuid.fromString("03B80E5A-EDE8-4B33-A751-6CE34EC4C700"))
-                .build())
+                .build()
+        )
+
         val settings = ScanSettings.Builder()
                 .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                 .build()
-        scanner.startScan(list, settings, object : ScanCallback() {
+
+
+        scanner.startScan(filters, settings, object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
                 if (inputPort != null) return
 
