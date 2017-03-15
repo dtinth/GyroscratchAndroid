@@ -144,15 +144,17 @@ class MainActivity : AppCompatActivity() {
                 else -> 0
             }
 
-            if (note != activeNote) {
-                if (activeNote > 0) {
-                    port.send(byteArrayOf(0x80.toByte(), activeNote, 127), 0, 3)
-                }
+            if (note == activeNote) {
+                return@let
+            }
 
-                activeNote = note
-                if (activeNote > 0) {
-                    port.send(byteArrayOf(0x90.toByte(), activeNote, 127), 0, 3)
-                }
+            if (activeNote > 0) {
+                port.send(byteArrayOf(0x80.toByte(), activeNote, 127), 0, 3)
+            }
+
+            activeNote = note
+            if (activeNote > 0) {
+                port.send(byteArrayOf(0x90.toByte(), activeNote, 127), 0, 3)
             }
         }
     }
