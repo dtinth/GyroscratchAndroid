@@ -109,12 +109,14 @@ class MainActivity : AppCompatActivity() {
                 .build()
         scanner.startScan(list, settings, object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
-                val device = result?.device
-                if (device != null && inputPort == null) {
-                    textView!!.text = "Found ${device.name}"
-                    if (device.name == "gyroscratch") {
-                        textView!!.text = "Connecting to ${device.address}"
-                        midiManager.openBluetoothDevice(device, fun(device) = take(device), Handler(Looper.getMainLooper()))
+                if (inputPort != null) return
+
+                result?.device?.let {
+                    textView!!.text = "Found ${it.name}"
+
+                    if (it.name == "gyroscratch") {
+                        textView!!.text = "Connecting to ${it.address}"
+                        midiManager.openBluetoothDevice(it, fun(device) = take(device), Handler(Looper.getMainLooper()))
                     }
                 }
             }
