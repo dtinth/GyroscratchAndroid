@@ -46,10 +46,12 @@ class MainActivity : AppCompatActivity() {
         CCW(-1, Color.RED, MidiNote.B2);
     }
 
-    private lateinit var textView: TextView
-    private var midiDevice: MidiDevice? = null
     private lateinit var rootView: View
+    private lateinit var textView: TextView
+
+    private var midiDevice: MidiDevice? = null
     private var inputPort: MidiInputPort? = null
+
     private var rotationMode: RotationMode = RotationMode.IDLE
         set(value) {
             if (field == value) return
@@ -144,7 +146,6 @@ class MainActivity : AppCompatActivity() {
         val settings = ScanSettings.Builder()
                 .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                 .build()
-
 
         scanner.startScan(filters, settings, object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
