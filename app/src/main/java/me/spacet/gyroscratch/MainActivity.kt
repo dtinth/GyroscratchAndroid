@@ -128,17 +128,27 @@ class MainActivity : AppCompatActivity() {
         inputPort = device.openInputPort(0)
     }
     private var activeNote: Byte = 0
-    fun reconcile() {
-        val mode = rotationMode
-        rootView!!.setBackgroundColor(
-                if (mode == 0) { Color.BLACK } else if (mode == 1) { Color.BLUE } else { Color.RED })
-        val port = inputPort
-        if (port != null) {
-            val note: Byte = if (mode == 1) { 48 } else if (mode == -1) { 47 } else { 0 }
+
+    private fun reconcile() {
+
+        rootView!!.setBackgroundColor(when (rotationMode) {
+            0 -> Color.BLACK
+            1 -> Color.BLUE
+            else -> Color.RED
+        })
+
+        inputPort?.let { port ->
+            val note: Byte = when (rotationMode) {
+                1 -> 48
+                -1 -> 47
+                else -> 0
+            }
+
             if (note != activeNote) {
                 if (activeNote > 0) {
                     port.send(byteArrayOf(0x80.toByte(), activeNote, 127), 0, 3)
                 }
+
                 activeNote = note
                 if (activeNote > 0) {
                     port.send(byteArrayOf(0x90.toByte(), activeNote, 127), 0, 3)
