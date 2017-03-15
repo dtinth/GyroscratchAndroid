@@ -62,41 +62,48 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-
-        val listener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                if (event == null) return
-
-                val rotationSpeed = event.values[2] * 180 / Math.PI
-                when {
-                    rotationSpeed > 10 -> {
-                        rotationMode = -1
-                        rotationHP = 1.0
+        sensorManager.registerListener(
+                object : SensorEventListener {
+                    override fun onSensorChanged(event: SensorEvent?) {
+                        onGyroChanged(event)
                     }
 
-                    rotationSpeed < -10 -> {
-                        rotationMode = 1
-                        rotationHP = 1.0
+                    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+
                     }
+                },
+                sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                SensorManager.SENSOR_DELAY_GAME
+        )
+    }
 
-                    Math.abs(rotationSpeed) < 3 && rotationHP < 0.9 -> {
-                        rotationMode = 0
-                    }
-                }
+    private fun onGyroChanged(event: SensorEvent?) {
+        if (event == null) return
 
-                reconcile()
-
-                lastTimestamp?.let {
-                    rotationHP *= Math.exp((event.timestamp - it) * -1e-9)
-                }
-
-                lastTimestamp = event.timestamp
+        val rotationSpeed = event.values[2] * 180 / Math.PI
+        when {
+            rotationSpeed > 10 -> {
+                rotationMode = -1
+                rotationHP = 1.0
             }
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+
+            rotationSpeed < -10 -> {
+                rotationMode = 1
+                rotationHP = 1.0
+            }
+
+            Math.abs(rotationSpeed) < 3 && rotationHP < 0.9 -> {
+                rotationMode = 0
             }
         }
-        sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+
+        reconcile()
+
+        lastTimestamp?.let {
+            rotationHP *= Math.exp((event.timestamp - it) * -1e-9)
+        }
+
+        lastTimestamp = event.timestamp
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
