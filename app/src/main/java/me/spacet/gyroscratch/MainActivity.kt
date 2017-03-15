@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
+import android.support.annotation.ColorInt
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
@@ -31,11 +32,19 @@ import org.jetbrains.anko.find
 import org.jetbrains.anko.sensorManager
 
 class MainActivity : AppCompatActivity() {
+
+    private enum class RotationMode(val v: Int, @ColorInt val color: Int) {
+        IDLE(0, Color.BLACK),
+        CW(1, Color.BLUE),
+        CCW(-1, Color.RED)
+    }
+
     private var textView: TextView? = null
     private var midiDevice: MidiDevice? = null
     private var inputPort: MidiInputPort? = null
     private var rootView: View? = null
     private var rotationMode: Int = 0
+    private var rotationMode: RotationMode = RotationMode.IDLE
     private var lastTimestamp: Long? = null
     private var rotationHP = 1.0
 
@@ -83,17 +92,17 @@ class MainActivity : AppCompatActivity() {
         val rotationSpeed = event.values[2] * 180 / Math.PI
         when {
             rotationSpeed > 10 -> {
-                rotationMode = -1
+                rotationMode = RotationMode.CCW
                 rotationHP = 1.0
             }
 
             rotationSpeed < -10 -> {
-                rotationMode = 1
+                rotationMode = RotationMode.CW
                 rotationHP = 1.0
             }
 
             Math.abs(rotationSpeed) < 3 && rotationHP < 0.9 -> {
-                rotationMode = 0
+                rotationMode = RotationMode.IDLE
             }
         }
 
@@ -152,16 +161,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun reconcile() {
 
-        rootView!!.setBackgroundColor(when (rotationMode) {
-            0 -> Color.BLACK
-            1 -> Color.BLUE
-            else -> Color.RED
-        })
+        rootView!!.setBackgroundColor(rotationMode.color)
 
         inputPort?.let { port ->
             val note: Byte = when (rotationMode) {
-                1 -> 48
-                -1 -> 47
+                RotationMode.CW -> 48
+                RotationMode.CCW -> 47
                 else -> 0
             }
 
