@@ -9,7 +9,10 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.hardware.*
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.media.midi.MidiDevice
 import android.media.midi.MidiInputPort
 import android.media.midi.MidiManager
@@ -17,67 +20,109 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
+import android.support.annotation.ColorInt
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
+import org.jetbrains.anko.find
+import org.jetbrains.anko.onClick
+import org.jetbrains.anko.sensorManager
 
 class MainActivity : AppCompatActivity() {
-    private var textView: TextView? = null
+
+    private enum class MidiNote(val noteNumber: Byte) {
+        B2(47),
+        C3(48)
+    }
+
+    private enum class RotationMode(val v: Int, @ColorInt val color: Int, val note: MidiNote? = null) {
+        IDLE(0, Color.BLACK),
+        CW(1, Color.BLUE, MidiNote.C3),
+        CCW(-1, Color.RED, MidiNote.B2);
+    }
+
+    private lateinit var rootView: View
+    private lateinit var textView: TextView
+
     private var midiDevice: MidiDevice? = null
     private var inputPort: MidiInputPort? = null
-    private var rootView: View? = null
-    private var rotationMode: Int = 0
+
+    private var rotationMode: RotationMode = RotationMode.IDLE
+
+    private var lastTimestamp: Long? = null
+    private var rotationHP = 1.0
+
+    private var activeNote: MidiNote? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val button = findViewById(R.id.bluetoothConnectButton) as Button
-        textView = findViewById(R.id.textView) as TextView
-        rootView = textView!!.rootView
-        val thisActivity = this
-        button.setOnClickListener {
-            val port = inputPort
-            if (port != null) {
-            } else if (ContextCompat.checkSelfPermission(thisActivity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(thisActivity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 0)
-            } else {
-                scan()
+
+        rootView = find<View>(android.R.id.content).rootView
+        textView = find<TextView>(R.id.textView)
+
+        find<Button>(R.id.bluetoothConnectButton).onClick {
+            if (inputPort != null) {
+                return@onClick
+            }
+
+            val permission = ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)
+
+            when (permission) {
+                PackageManager.PERMISSION_GRANTED -> scan()
+                else -> ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 0)
             }
         }
 
-        val sensorManager = applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        var rotationHP = 1.0
-        var lastTimestamp: Long = 0
-        val listener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                if (event != null) {
-                    val rotationSpeed = event.values[2] * 180 / Math.PI
-                    if (rotationSpeed > 10) {
-                        rotationMode = -1
-                        rotationHP = 1.0
-                    } else if (rotationSpeed < -10) {
-                        rotationMode = 1
-                        rotationHP = 1.0
-                    } else if (Math.abs(rotationSpeed) < 3 && rotationHP < 0.9) {
-                        rotationMode = 0
+        sensorManager.registerListener(
+                object : SensorEventListener {
+                    override fun onSensorChanged(event: SensorEvent?) {
+                        onGyroChanged(event)
                     }
-                    reconcile()
-                    if (lastTimestamp > 0) {
-                        rotationHP *= Math.exp((event.timestamp - lastTimestamp) * -1e-9)
+
+                    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+
                     }
-                    lastTimestamp = event.timestamp
-                }
+                },
+                sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                SensorManager.SENSOR_DELAY_GAME
+        )
+    }
+
+    private fun onGyroChanged(event: SensorEvent?) {
+        if (event == null) return
+
+        val rotationSpeed = event.values[2] * 180 / Math.PI
+
+        when {
+            (rotationSpeed > 10) -> {
+                rotationMode = RotationMode.CCW
+                rotationHP = 1.0
             }
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+
+            (rotationSpeed < -10) -> {
+                rotationMode = RotationMode.CW
+                rotationHP = 1.0
+            }
+
+            (Math.abs(rotationSpeed) < 3) && (rotationHP < 0.9) -> {
+                rotationMode = RotationMode.IDLE
             }
         }
-        sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+
+        reconcile()
+
+        lastTimestamp?.let {
+            rotationHP *= Math.exp((event.timestamp - it) * -1e-9)
+        }
+
+        lastTimestamp = event.timestamp
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -87,51 +132,75 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun scan() {
-        textView!!.text = "Gonna scan now!"
+        textView.text = "Gonna scan now!"
+
         val midiManager = applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
         val scanner = BluetoothAdapter.getDefaultAdapter().bluetoothLeScanner
-        val list = ArrayList<ScanFilter>()
-        list.add(ScanFilter.Builder()
+
+        val filters = listOf(ScanFilter.Builder()
                 .setServiceUuid(ParcelUuid.fromString("03B80E5A-EDE8-4B33-A751-6CE34EC4C700"))
-                .build())
+                .build()
+        )
+
         val settings = ScanSettings.Builder()
                 .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                 .build()
-        scanner.startScan(list, settings, object : ScanCallback() {
+
+        scanner.startScan(filters, settings, object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
-                val device = result?.device
-                if (device != null && inputPort == null) {
-                    textView!!.text = "Found ${device.name}"
-                    if (device.name == "gyroscratch") {
-                        textView!!.text = "Connecting to ${device.address}"
-                        midiManager.openBluetoothDevice(device, fun(device) = take(device), Handler(Looper.getMainLooper()))
+                if (inputPort != null) return
+
+                result?.device?.let {
+                    textView.text = "Found ${it.name}"
+
+                    if (it.name == "gyroscratch") {
+                        textView.text = "Connecting to ${it.address}"
+                        midiManager.openBluetoothDevice(it, this@MainActivity::take, Handler(Looper.getMainLooper()))
                     }
                 }
             }
         })
     }
+
     fun take(device: MidiDevice) {
-        textView!!.text = "Connected to ${device.info}"
+        textView.text = "Connected to ${device.info}"
         midiDevice = device
         inputPort = device.openInputPort(0)
     }
-    private var activeNote: Byte = 0
-    fun reconcile() {
-        val mode = rotationMode
-        rootView!!.setBackgroundColor(
-                if (mode == 0) { Color.BLACK } else if (mode == 1) { Color.BLUE } else { Color.RED })
-        val port = inputPort
-        if (port != null) {
-            val note: Byte = if (mode == 1) { 48 } else if (mode == -1) { 47 } else { 0 }
-            if (note != activeNote) {
-                if (activeNote > 0) {
-                    port.send(byteArrayOf(0x80.toByte(), activeNote, 127), 0, 3)
-                }
-                activeNote = note
-                if (activeNote > 0) {
-                    port.send(byteArrayOf(0x90.toByte(), activeNote, 127), 0, 3)
-                }
+
+    private fun reconcile() {
+        val note = rotationMode.note
+
+        if (note == activeNote) {
+            return
+        }
+
+        rootView.setBackgroundColor(rotationMode.color)
+
+        Log.d("rotationMode", "$rotationMode")
+
+        inputPort?.apply {
+            activeNote?.noteNumber?.let {
+                sendNoteOff(it)
+            }
+
+            note?.noteNumber?.let {
+                sendNoteOn(it)
             }
         }
+
+        activeNote = note
     }
+
+    private fun createNoteEvent(noteOn: Boolean, note: Byte, velocity: Byte) = byteArrayOf((if (noteOn) 0x90 else 0x80).toByte(), note, velocity)
+
+    private fun MidiInputPort.sendNoteEvent(noteOn: Boolean, note: Byte, velocity: Byte = 127) {
+        createNoteEvent(noteOn, note, velocity).let {
+            send(it, 0, it.size)
+        }
+    }
+
+    private fun MidiInputPort.sendNoteOff(note: Byte) = sendNoteEvent(noteOn = false, note = note)
+
+    private fun MidiInputPort.sendNoteOn(note: Byte) = sendNoteEvent(noteOn = true, note = note)
 }
